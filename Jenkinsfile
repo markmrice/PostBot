@@ -7,18 +7,24 @@ pipeline {
     }
 
     stages {
-        stage('Build Docker Image') {
+        stage('Clone Repository') {
             steps {
-                sh 'docker build -t postbot .' // Build Docker image
+                git 'https://github.com/markmrice/PostBot.git'
             }
         }
 
-        stage('Start Container') {
+        stage('Build Docker Image') {
             steps {
+                sh 'docker build -t postbot .' // Build the Docker image
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                // Explicitly name the container
                 sh '''
                 docker run -d --name postbot_container \
-                -e EBAY_APP_ID="${EBAY_APP_ID}" \
-                -e ROYALMAIL_API_KEY="${ROYALMAIL_API_KEY}" \
+                --env-file .env \
                 postbot
                 '''
             }
@@ -36,27 +42,9 @@ pipeline {
             }
         }
 
-        stage('Upload CSV Simulation') {
-            steps {
-                sh 'docker exec postbot_container python upload_to_royal_mail.py'
-            }
-        }
-
-        stage('Retrieve Tracking Simulation') {
-            steps {
-                sh 'docker exec postbot_container python get_tracking_numbers.py'
-            }
-        }
-
-        stage('Update eBay Orders Simulation') {
-            steps {
-                sh 'docker exec postbot_container python update_ebay_orders.py'
-            }
-        }
-
         stage('Check Logs') {
             steps {
-                // Correct the container name
+                // Use the correct container name
                 sh 'docker logs postbot_container || echo "No logs available for postbot_container."'
             }
         }
@@ -65,7 +53,7 @@ pipeline {
     post {
         always {
             steps {
-                // Clean up the container even if it doesn't exist
+                // Clean up the container
                 sh '''
                 docker stop postbot_container || true
                 docker rm postbot_container || true
