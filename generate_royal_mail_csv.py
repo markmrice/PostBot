@@ -1,42 +1,27 @@
 import os
 import pandas as pd
-import logging
 
-# Setup logging
-log_dir = "/app/logs"
-os.makedirs(log_dir, exist_ok=True)  # Ensure log directory exists
-log_file = os.path.join(log_dir, "generate_csv.log")
-
-logging.basicConfig(
-    filename=log_file,
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
+def write_log(message):
+    """Helper function to append log messages to postbot.log."""
+    with open("/app/postbot.log", "a") as log_file:
+        log_file.write(message + "\n")
 
 def generate_csv():
-    logging.info("Starting Royal Mail CSV generation...")
-    print("Simulating Royal Mail CSV generation...")
+    write_log("Starting Royal Mail CSV generation...")
 
     # Simulated data
     data = [
         ["John Doe", "123 Main St", "", "London", "Greater London", "UK", "Royal Mail Tracked", "Sample Product"]
     ]
 
-    df = pd.DataFrame(data, columns=[
-        "Name", "Street1", "Street2", "City", "State", "Country", "ShippingMethod", "Item"
-    ])
-
-    csv_path = "/app/royal_mail_orders.csv"
-
     try:
-        df.to_csv(csv_path, index=False)
-        success_message = f"CSV generated successfully at {csv_path}."
-        logging.info(success_message)
-        print(success_message)
+        df = pd.DataFrame(data, columns=[
+            "Name", "Street1", "Street2", "City", "State", "Country", "ShippingMethod", "Item"
+        ])
+        df.to_csv("/app/royal_mail_orders.csv", index=False)
+        write_log("Royal Mail CSV generated successfully at /app/royal_mail_orders.csv.")
     except Exception as e:
-        error_message = f"Error generating CSV: {e}"
-        logging.error(error_message)
-        print(error_message)
+        write_log(f"Error generating Royal Mail CSV: {e}")
 
 if __name__ == "__main__":
     generate_csv()
