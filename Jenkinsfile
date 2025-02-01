@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        EBAY_APP_ID = credentials('ebay-api-key') // Placeholder for now
-        ROYALMAIL_API_KEY = credentials('royalmail-api-key') // Placeholder for now
+        EBAY_APP_ID = credentials('ebay-api-key')
+        ROYALMAIL_API_KEY = credentials('royalmail-api-key')
     }
 
     stages {
@@ -11,52 +11,83 @@ pipeline {
             steps {
                 echo "Cloning repository..."
                 git 'https://github.com/markmrice/PostBot.git'
-                echo "Repository cloned successfully."
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker image..."
-                sh 'docker build -t postbot . | tee build.log'
-                echo "Docker image built successfully."
+                sh 'docker build -t postbot .'
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                echo "Starting PostBot container..."
+                echo "Starting postbot container..."
                 sh '''
                 docker run -d --name postbot_container \
                 --env-file .env \
-                -v $(pwd)/logs:/app/logs \  # Mount logs directory
                 postbot
                 '''
-                echo "PostBot container started."
             }
         }
 
         stage('Run eBay Order Fetch Simulation') {
             steps {
-                echo "Running eBay order fetch script..."
-                sh 'docker exec postbot_container python fetch_ebay_orders.py 2>&1 | tee -a logs/fetch_orders.log'
-                echo "eBay order fetch completed."
+                echo "Fetching orders from eBay..."
+                sh '''
+                docker exec postbot_container python fetch_ebay_orders.py
+                docker cp postbot_container:/app/orders.xml logs/orders.xml || echo "No orders.xml found."
+                '''
             }
         }
 
         stage('Generate Royal Mail CSV Simulation') {
             steps {
-                echo "Running Royal Mail CSV generator..."
-                sh 'docker exec postbot_container python generate_royal_mail_csv.py 2>&1 | tee -a logs/royal_mail.log'
-                echo "Royal Mail CSV generation completed."
+                echo "Generating Royal Mail CSV..."
+                sh '''
+                docker exec postbot_container python generate_royal_mail_csv.py
+                docker cp postbot_container:/app/royal_mail_orders.csv logs/royal_mail_orders.csv || echo "No CSV file found."
+                '''
+            }
+        }
+
+        stage('Retrieve Tracking Numbers') {
+            steps {
+                echo "Retrieving tracking numbers..."
+                sh '''
+                docker exec postbot_container python get_tracking.py
+                docker cp postbot_container:/app/logs/tracking.log logs/tracking.log || echo "No tracking log found."
+                '''
+            }
+        }
+
+        stage('Update eBay Orders with Tracking') {
+            steps {
+                echo "Updating eBay orders with tracking..."
+                sh '''
+                docker exec postbot_container python update_orders.py
+                docker cp postbot_container:/app/logs/update_orders.log logs/update_orders.log || echo "No order update log found."
+                '''
+            }
+        }
+
+        stage('Upload CSV to Royal Mail FTP') {
+            steps {
+                echo "Uploading CSV file to Royal Mail FTP..."
+                sh '''
+                docker exec postbot_container python upload_csv.py
+                docker cp postbot_container:/app/logs/ftp_upload.log logs/ftp_upload.log || echo "No FTP log found."
+                '''
             }
         }
 
         stage('Check Logs') {
             steps {
-                echo "Retrieving logs..."
-                sh 'docker logs postbot_container > logs/container_logs.log || echo "No logs available."'
-                echo "Logs retrieved successfully."
+                echo "Retrieving logs from the container..."
+                sh '''
+                docker logs postbot_container > logs/container_logs.txt || echo "No logs available for postbot_container."
+                '''
             }
         }
     }
@@ -68,6 +99,10 @@ pipeline {
             docker stop postbot_container || true
             docker rm postbot_container || true
             '''
+            
+            echo "Archiving logs..."
+            archiveArtifacts artifacts: 'logs/**', fingerprint: true
+
             echo "Pipeline execution complete."
         }
     }
