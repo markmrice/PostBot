@@ -2,73 +2,83 @@ pipeline {
     agent any
 
     environment {
-        EBAY_APP_ID = credentials('ebay-api-key') // Ensure this exists in Jenkins
-        ROYALMAIL_API_KEY = credentials('royalmail-api-key') // Ensure this exists in Jenkins
+        EBAY_APP_ID = credentials('ebay-api-key')
+        ROYALMAIL_API_KEY = credentials('royalmail-api-key')
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                script { echo 'Cloning repository...' }
+                echo "📥 Cloning the repository..."
                 git 'https://github.com/markmrice/PostBot.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script { echo 'Building Docker image...' }
+                echo "🐳 Building Docker image..."
                 sh 'docker build -t postbot .'
+            }
+        }
+
+        stage('Check Existing Containers') {
+            steps {
+                echo "🔍 Checking for existing containers..."
+                sh 'docker ps -a || echo "No existing containers found."'
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                script {
-                    echo 'Checking for existing container and removing if necessary...'
-                }
+                echo "🚀 Starting the container..."
                 sh '''
-                docker stop postbot_container || true
-                docker rm postbot_container || true
-                echo "Starting the new postbot container..."
-                docker run -d --name postbot_container --env-file .env postbot
+                docker run -d --name postbot_container \
+                --env-file .env \
+                postbot
                 '''
+                sleep 3  # Give the container time to start
+                sh 'docker ps -a'
             }
         }
 
         stage('Run eBay Order Fetch Simulation') {
             steps {
-                script { echo 'Running eBay order fetch simulation...' }
-                sh 'docker exec postbot_container python fetch_ebay_orders.py || echo "Simulation failed, but continuing."'
+                echo "📦 Running eBay order fetch..."
+                sh '''
+                docker exec postbot_container python fetch_ebay_orders.py \
+                | tee -a postbot.log || echo "❌ Error running fetch_ebay_orders.py"
+                '''
             }
         }
 
         stage('Generate Royal Mail CSV Simulation') {
             steps {
-                script { echo 'Generating Royal Mail CSV simulation...' }
-                sh 'docker exec postbot_container python generate_royal_mail_csv.py || echo "Simulation failed, but continuing."'
+                echo "📄 Generating Royal Mail CSV..."
+                sh '''
+                docker exec postbot_container python generate_royal_mail_csv.py \
+                | tee -a postbot.log || echo "❌ Error running generate_royal_mail_csv.py"
+                '''
             }
         }
 
         stage('Check Logs') {
             steps {
-                script { echo 'Checking logs for postbot_container...' }
-                sh 'docker logs postbot_container || echo "No logs available."'
+                echo "📜 Retrieving container logs..."
+                sh '''
+                docker logs postbot_container | tee -a postbot.log || echo "⚠️ No logs available."
+                '''
             }
         }
     }
 
     post {
         always {
-            node { // Wrap cleanup in a node block to avoid the MissingContextVariableException
-                script {
-                    echo 'Cleaning up resources...'
-                }
-                sh '''
-                docker stop postbot_container || true
-                docker rm postbot_container || true
-                '''
-                echo 'Pipeline execution complete.'
-            }
+            echo "🧹 Cleaning up resources..."
+            sh '''
+            docker stop postbot_container || echo "⚠️ Container was not running."
+            docker rm postbot_container || echo "⚠️ Container not found."
+            '''
+            echo "✅ Pipeline execution complete."
         }
     }
 }
