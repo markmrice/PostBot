@@ -65,7 +65,7 @@ pipeline {
             steps {
                 echo "📜 Retrieving container logs..."
                 sh '''
-                docker logs postbot_container | tee -a postbot.log || echo "⚠️ No logs available."
+                docker logs jenkins | tee -a postbot.log || echo "⚠️ No logs available."
                 '''
             }
         }
