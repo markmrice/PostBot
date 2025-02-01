@@ -21,7 +21,7 @@ pipeline {
 
         stage('Run Docker Container') {
             steps {
-                // Explicitly name the container
+                // Explicitly name the container as "postbot_container"
                 sh '''
                 docker run -d --name postbot_container \
                 --env-file .env \
@@ -32,6 +32,7 @@ pipeline {
 
         stage('Run eBay Order Fetch Simulation') {
             steps {
+                // Execute the script inside the container
                 sh 'docker exec postbot_container python fetch_ebay_orders.py'
             }
         }
@@ -44,7 +45,7 @@ pipeline {
 
         stage('Check Logs') {
             steps {
-                // Use the correct container name
+                // Retrieve logs for the explicitly named container
                 sh 'docker logs postbot_container || echo "No logs available for postbot_container."'
             }
         }
@@ -53,7 +54,7 @@ pipeline {
     post {
         always {
             steps {
-                // Clean up the container
+                // Stop and remove the container after pipeline completion
                 sh '''
                 docker stop postbot_container || true
                 docker rm postbot_container || true
