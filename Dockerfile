@@ -22,4 +22,5 @@ RUN python -m venv /app/venv \
     && pip install -r requirements.txt
 
 # Set the entry point or command as needed
-CMD ["python", "your_script.py"]
+CMD ["python", "fetch_ebay_orders.py"]
+
