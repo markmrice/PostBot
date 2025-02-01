@@ -13,10 +13,10 @@ pipeline {
             }
         }
 
-        stage('Run eBay Order Fetch Simulation') {
+        stage('Start Container') {
             steps {
                 sh '''
-                docker run \
+                docker run -d --name postbot_container \
                 -e EBAY_APP_ID="${EBAY_APP_ID}" \
                 -e ROYALMAIL_API_KEY="${ROYALMAIL_API_KEY}" \
                 postbot
@@ -24,27 +24,46 @@ pipeline {
             }
         }
 
+        stage('Run eBay Order Fetch Simulation') {
+            steps {
+                sh 'docker exec postbot_container python fetch_ebay_orders.py'
+            }
+        }
+
         stage('Generate Royal Mail CSV Simulation') {
             steps {
-                sh 'docker run postbot python generate_royal_mail_csv.py'
+                sh 'docker exec postbot_container python generate_royal_mail_csv.py'
             }
         }
 
         stage('Upload CSV Simulation') {
             steps {
-                sh 'docker run postbot python upload_to_royal_mail.py'
+                sh 'docker exec postbot_container python upload_to_royal_mail.py'
             }
         }
 
         stage('Retrieve Tracking Simulation') {
             steps {
-                sh 'docker run postbot python get_tracking_numbers.py'
+                sh 'docker exec postbot_container python get_tracking_numbers.py'
             }
         }
 
         stage('Update eBay Orders Simulation') {
             steps {
-                sh 'docker run postbot python update_ebay_orders.py'
+                sh 'docker exec postbot_container python update_ebay_orders.py'
+            }
+        }
+    }
+
+    post {
+        always {
+            steps {
+                // Stop and remove the container after the pipeline
+                sh '''
+                docker stop postbot_container || true
+                docker rm postbot_container || true
+                '''
+                echo 'Pipeline execution complete.'
             }
         }
     }

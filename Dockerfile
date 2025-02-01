@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.10-slim
 
 # Create a non-root user
 RUN useradd -m myuser
@@ -21,6 +21,8 @@ RUN python -m venv /app/venv \
     && pip install --upgrade pip \
     && pip install -r requirements.txt
 
-# Set the entry point or command as needed
-CMD ["python", "fetch_ebay_orders.py"]
+# Add a health check (optional)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD curl -f http://localhost:8080/ || exit 1
 
+# Set the entry point or command as needed
+CMD ["/bin/bash", "-c", "source /app/venv/bin/activate && python fetch_ebay_orders.py"]
