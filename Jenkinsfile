@@ -32,7 +32,6 @@ pipeline {
 
         stage('Run eBay Order Fetch Simulation') {
             steps {
-                // Execute the script inside the container
                 sh 'docker exec postbot_container python fetch_ebay_orders.py'
             }
         }
@@ -54,7 +53,7 @@ pipeline {
     post {
         always {
             steps {
-                // Stop and remove the container after pipeline completion
+                // Ensure the container is cleaned up after pipeline completion
                 sh '''
                 docker stop postbot_container || true
                 docker rm postbot_container || true
