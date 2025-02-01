@@ -74,10 +74,10 @@ pipeline {
     post {
         always {
             echo "🧹 Cleaning up resources..."
-            sh '''
+            /*sh '''
             docker stop postbot_container || echo "⚠️ Container was not running."
             docker rm postbot_container || echo "⚠️ Container not found."
-            '''
+            '''*/
             echo "✅ Pipeline execution complete."
         }
     }
