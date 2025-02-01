@@ -2,41 +2,39 @@ pipeline {
     agent any
 
     environment {
-        EBAY_APP_ID = credentials('ebay-api-key') // Placeholder
-        ROYALMAIL_API_KEY = credentials('royalmail-api-key') // Placeholder
+        EBAY_APP_ID = credentials('ebay-api-key') // Placeholder for API credentials
+        ROYALMAIL_API_KEY = credentials('royalmail-api-key')
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                echo "Cloning PostBot repository..."
+                echo 'Cloning repository...'
                 git 'https://github.com/markmrice/PostBot.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "Building Docker image for PostBot..."
+                echo 'Building Docker image for PostBot...'
                 sh 'docker build -t postbot .'
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                echo "Starting PostBot container..."
+                echo 'Starting PostBot container...'
                 sh '''
-                docker stop postbot_container || true
-                docker rm postbot_container || true
-                docker run -d --name postbot_container --env-file .env postbot
+                docker run -d --name postbot_container \
+                --env-file .env \
+                postbot
                 '''
             }
         }
 
         stage('Run Scripts and Generate Logs') {
             steps {
-                echo "Running PostBot scripts inside the container..."
-
-                // Run each script and redirect output to log files
+                echo 'Running scripts inside PostBot container and generating logs...'
                 sh '''
                 docker exec postbot_container python fetch_ebay_orders.py > fetch_ebay_orders.log 2>&1
                 docker exec postbot_container python generate_royal_mail_csv.py > generate_csv.log 2>&1
@@ -49,7 +47,7 @@ pipeline {
 
         stage('Archive Logs') {
             steps {
-                echo "Archiving logs for all scripts..."
+                echo 'Archiving logs for all scripts...'
                 sh '''
                 docker cp postbot_container:/app/fetch_ebay_orders.log .
                 docker cp postbot_container:/app/generate_csv.log .
@@ -60,30 +58,17 @@ pipeline {
                 archiveArtifacts artifacts: '*.log', fingerprint: true
             }
         }
-
-        stage('Check Container Logs') {
-            steps {
-                echo "Retrieving logs from the PostBot container..."
-                sh 'docker logs postbot_container || echo "No logs available from container."'
-            }
-        }
     }
 
     post {
         always {
-            echo "Cleaning up resources..."
-            sh '''
-            docker stop postbot_container || true
-            docker rm postbot_container || true
-            '''
-        }
-
-        failure {
-            echo "Pipeline failed. Check the logs for more details."
-        }
-
-        success {
-            echo "Pipeline succeeded! All steps executed correctly."
+            steps {
+                echo 'Cleaning up resources...'
+                sh '''
+                docker stop postbot_container || true
+                docker rm postbot_container || true
+                '''
+            }
         }
     }
 }
