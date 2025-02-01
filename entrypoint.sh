@@ -1,10 +1,8 @@
 #!/bin/bash
+# Entrypoint script to initialize the application
 
-# Activate the virtual environment
+# Activate the Python virtual environment
 source /app/venv/bin/activate
 
-# Redirect logs to the specified file and stdout
-exec > >(tee -a "$LOG_FILE") 2>&1
-
 # Run the main script
-python fetch_ebay_orders.py
+exec python fetch_ebay_orders.py
