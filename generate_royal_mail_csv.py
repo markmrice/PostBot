@@ -5,6 +5,7 @@ def write_log(message):
     """Helper function to append log messages to postbot.log."""
     with open("/app/postbot.log", "a") as log_file:
         log_file.write(message + "\n")
+        print(message)  # Add this for debugging
 
 def generate_csv():
     write_log("Starting Royal Mail CSV generation...")

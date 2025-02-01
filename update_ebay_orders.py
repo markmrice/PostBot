@@ -4,6 +4,7 @@ def write_log(message):
     """Helper function to append log messages to postbot.log."""
     with open("/app/postbot.log", "a") as log_file:
         log_file.write(message + "\n")
+        print(message)  # Add this for debugging
 
 def update_orders():
     write_log("Starting eBay order update with tracking numbers...")

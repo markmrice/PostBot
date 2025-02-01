@@ -9,6 +9,7 @@ def write_log(message):
     """Helper function to append log messages to postbot.log."""
     with open("/app/postbot.log", "a") as log_file:
         log_file.write(message + "\n")
+        print(message)  # Add this for debugging
 
 def upload_csv():
     write_log(f"Starting upload to Royal Mail FTP server: {FTP_HOST}")
