@@ -31,3 +31,4 @@ RUN python -m venv /app/venv \
 
 # Define the entry point for the container
 ENTRYPOINT ["/app/entrypoint.sh"]
+
