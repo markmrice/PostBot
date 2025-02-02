@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 
+csv_file = [[]]
+
 def write_log(message):
     """Helper function to append log messages to postbot.log."""
     with open("/app/postbot.log", "a") as log_file:
@@ -11,9 +13,11 @@ def generate_csv():
     write_log("Starting Royal Mail CSV generation...")
 
     # Simulated data
-    data = [
+    csv_file = [
         ["John Doe", "123 Main St", "", "London", "Greater London", "UK", "Royal Mail Tracked", "Sample Product"]
     ]
+
+    return csv_file
 
     try:
         df = pd.DataFrame(data, columns=[
