@@ -17,11 +17,11 @@ run_script() {
 }
 
 # Run each script
-run_script fetch_ebay_orders.py
-run_script generate_royal_mail_csv.py
-run_script upload_to_royalmail.py
-run_script get_tracking_numbers.py
-run_script update_ebay_orders.py
+run_script Scripts/fetch_ebay_orders.py
+run_script Scripts/generate_royal_mail_csv.py
+run_script Scripts/upload_to_royalmail.py
+run_script Scripts/get_tracking_numbers.py
+run_script Scripts/update_ebay_orders.py
 
 # Keep the container running by tailing the log file
 exec tail -f /app/logs/postbot.log
