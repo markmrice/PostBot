@@ -29,6 +29,10 @@ RUN python -m venv /app/venv \
     && pip install --upgrade pip \
     && pip install -r requirements.txt
 
-# Define the entry point for the container
+# Ensure the entrypoint script is executable
+RUN chmod +x /app/entrypoint.sh
+
+# Set the entry point
 ENTRYPOINT ["/app/entrypoint.sh"]
+
 
